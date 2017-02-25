@@ -106,17 +106,29 @@ defmodule JSONAPI.View do
       end
 
       def url_for(data, %Plug.Conn{}=conn) when is_list(data) do
-        "#{Atom.to_string(conn.scheme)}://#{conn.host}#{@namespace}/#{type()}"
+        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type()}"
       end
 
       def url_for(data, %Plug.Conn{}=conn) do
-        "#{Atom.to_string(conn.scheme)}://#{conn.host}#{@namespace}/#{type()}/#{id(data)}"
+        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type()}/#{id(data)}"
       end
 
       def url_for_rel(data, rel_type, conn) do
         "#{url_for(data, conn)}/relationships/#{rel_type}"
       end
 
+      defp host_for_conn(conn) do
+        case {conn.scheme, conn.port} do
+          {:http, 80} ->
+            "#{conn.host}"
+          {:http, port} ->
+            "#{conn.host}:#{conn.port}"
+          {:https, 443} ->
+            "#{conn.host}"
+          {:https, port} ->
+            "#{conn.host}:#{conn.port}"
+        end
+      end
 
       if Code.ensure_loaded?(Phoenix) do
         def render("show.json", %{data: data, conn: conn}),
