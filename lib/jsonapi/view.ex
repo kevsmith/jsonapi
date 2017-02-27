@@ -62,13 +62,15 @@ defmodule JSONAPI.View do
   """
   defmacro __using__(opts \\ []) do
     {type, opts} = Keyword.pop(opts, :type)
-    {namespace, _opts} = Keyword.pop(opts, :namespace, "")
+    {namespace, opts} = Keyword.pop(opts, :namespace, "")
+    {pluralize, _opts} = Keyword.pop(opts, :pluralize, false)
 
     quote do
       import JSONAPI.Serializer, only: [serialize: 3]
 
       @resource_type unquote(type)
       @namespace unquote(namespace)
+      @pluralize unquote(pluralize)
 
       def id(nil), do: nil
       def id(%{__struct__: Ecto.Association.NotLoaded}), do: nil
@@ -78,6 +80,12 @@ defmodule JSONAPI.View do
         def type, do: @resource_type
       else
         def type, do: raise "Need to implement type/0"
+      end
+
+      if @pluralize do
+        def type_url(), do: Inflex.pluralize(type())
+      else
+        def type_url(), do: type()
       end
 
       #TODO Figure out the nesting of fields
@@ -94,23 +102,23 @@ defmodule JSONAPI.View do
         do: serialize(__MODULE__, models, conn)
 
       def url_for(nil, nil) do
-        "#{@namespace}/#{type()}"
+        "#{@namespace}/#{type_url()}"
       end
 
       def url_for(data, nil) when is_list(data) do
-        "#{@namespace}/#{type()}"
+        "#{@namespace}/#{type_url()}"
       end
 
       def url_for(data, nil) do
-        "#{@namespace}/#{type()}/#{id(data)}"
+        "#{@namespace}/#{type_url()}/#{id(data)}"
       end
 
       def url_for(data, %Plug.Conn{}=conn) when is_list(data) do
-        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type()}"
+        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type_url()}"
       end
 
       def url_for(data, %Plug.Conn{}=conn) do
-        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type()}/#{id(data)}"
+        "#{Atom.to_string(conn.scheme)}://#{host_for_conn(conn)}#{@namespace}/#{type_url()}/#{id(data)}"
       end
 
       def url_for_rel(data, rel_type, conn) do
@@ -147,6 +155,7 @@ defmodule JSONAPI.View do
                      id: 1,
                      relationships: 0,
                      type: 0,
+                     type_url: 0,
                      url_for: 2,
                      url_for_rel: 3
     end

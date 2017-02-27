@@ -20,6 +20,7 @@ defmodule JSONAPI.Mixfile do
   defp deps do
     [
       {:plug, "~> 1.0"},
+      {:inflex, "~> 1.8.0"},
       {:ex_doc, "~> 0.7", only: :dev},
       {:earmark, ">= 0.0.0", only: :dev},
       {:poison, "~> 3.0", only: :test}
