@@ -179,6 +179,7 @@ defmodule JSONAPI.QueryParser do
 
   def get_view_for_type(view, type) do
     case Enum.find(view.relationships, fn {k, _v} -> Atom.to_string(k) == type end) do
+      {_, {view, _}} -> view
       {_, view} -> view
       nil -> raise InvalidQuery, resource: view.type, param: type, param_type: :fields
     end
