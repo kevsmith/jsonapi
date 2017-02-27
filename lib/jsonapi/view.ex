@@ -63,7 +63,8 @@ defmodule JSONAPI.View do
   defmacro __using__(opts \\ []) do
     {type, opts} = Keyword.pop(opts, :type)
     {namespace, opts} = Keyword.pop(opts, :namespace, "")
-    {pluralize, _opts} = Keyword.pop(opts, :pluralize, false)
+    {pluralize, opts} = Keyword.pop(opts, :pluralize, false)
+    {trim_null_attrs, _opts} = Keyword.pop(opts, :trim_null_attrs, false)
 
     quote do
       import JSONAPI.Serializer, only: [serialize: 3]
@@ -71,6 +72,7 @@ defmodule JSONAPI.View do
       @resource_type unquote(type)
       @namespace unquote(namespace)
       @pluralize unquote(pluralize)
+      @trim_null_attrs unquote(trim_null_attrs)
 
       def id(nil), do: nil
       def id(%{__struct__: Ecto.Association.NotLoaded}), do: nil
@@ -89,10 +91,15 @@ defmodule JSONAPI.View do
       end
 
       #TODO Figure out the nesting of fields
-      def attributes(data, conn) do
-        Map.take(data, fields())
+      if @trim_null_attrs do
+        def attributes(data, conn) do
+          Map.take(data, fields()) |> Enum.reject(fn({_, v}) -> v == nil end) |> Enum.into(%{})
+        end
+      else
+        def attributes(data, conn) do
+          Map.take(data, fields())
+        end
       end
-
       def relationships, do: []
       def fields, do: raise "Need to implement fields/0"
 
